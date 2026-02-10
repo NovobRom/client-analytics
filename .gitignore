@@ -3,3 +3,5 @@ dist
 .DS_Store
 *.log
 *.csv
+.agent/
+Client Analytics v14.1.html
