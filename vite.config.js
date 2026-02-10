@@ -2,6 +2,7 @@ import { defineConfig } from 'vite';
 import { viteSingleFile } from 'vite-plugin-singlefile';
 
 export default defineConfig({
+  base: './',
   plugins: [viteSingleFile()],
   build: {
     target: 'esnext',
@@ -10,8 +11,8 @@ export default defineConfig({
     cssCodeSplit: false,
     brotliSize: false,
     inlineDynamicImports: true,
-    output: {
-      // Remove manualChunks to let Vite handle it
-    }
+    rollupOptions: {
+      input: 'index.html',
+    },
   }
 });
