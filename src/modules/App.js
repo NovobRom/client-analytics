@@ -31,6 +31,8 @@ export class App {
         const bind = (id, fn) => { const el = document.getElementById(id); if (el) el.addEventListener('change', fn); };
         bind('csvInput', (e) => this.handleFile(e.target.files[0], 'csv'));
         bind('excelInput', (e) => this.handleFile(e.target.files[0], 'excel'));
+        bind('csvInputLanding', (e) => this.handleFile(e.target.files[0], 'csv'));
+        bind('excelInputLanding', (e) => this.handleFile(e.target.files[0], 'excel'));
 
         // Search
         const searchInput = document.getElementById('searchTable');
