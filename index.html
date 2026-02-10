@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="uk">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Analytics v14.1 (Modular)</title>
+
+    <!-- CSS Framework -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Flags Library -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/lipis/flag-icons@7.0.0/css/flag-icons.min.css" />
+
+    <!-- Modules -->
+    <script type="module" src="/src/main.js"></script>
+</head>
+
+<body class="text-gray-800 relative">
+
+    <!-- LOADING OVERLAY -->
+    <div id="loadingOverlay"
+        class="fixed inset-0 hidden flex-col items-center justify-center transition-opacity duration-300 z-[100] bg-white/90 backdrop-blur-sm">
+        <div class="animate-spin rounded-full h-16 w-16 border-b-4 border-indigo-600 mb-4"></div>
+        <h2 class="text-2xl font-bold text-gray-700 animate-pulse" id="loadingText">Обробка даних...</h2>
+        <p class="text-sm text-gray-500 mt-2">Це може зайняти кілька секунд</p>
+    </div>
+
+    <!-- LANDING SCREEN -->
+    <div id="landingScreen" class="flex flex-col items-center justify-center min-h-screen bg-gray-50">
+        <h1 class="text-4xl font-bold text-gray-800 mb-4">Client Analytics v14.1</h1>
+        <div class="space-y-4 text-center">
+            <p class="text-gray-600">Завантажте файл .csv або .xlsx для початку роботи</p>
+            <div class="flex gap-4 justify-center">
+                <label
+                    class="cursor-pointer bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-8 rounded-xl shadow-lg transition-transform hover:scale-105">
+                    Завантажити CSV
+                    <input type="file" id="csvInputLanding" accept=".csv" class="hidden"
+                        onchange="document.getElementById('csvInput').files = this.files; document.getElementById('csvInput').dispatchEvent(new Event('change'));">
+                </label>
+                <label
+                    class="cursor-pointer bg-green-600 hover:bg-green-700 text-white font-medium py-3 px-8 rounded-xl shadow-lg transition-transform hover:scale-105">
+                    Завантажити Excel
+                    <input type="file" id="excelInputLanding" accept=".xlsx, .xls" class="hidden"
+                        onchange="document.getElementById('excelInput').files = this.files; document.getElementById('excelInput').dispatchEvent(new Event('change'));">
+                </label>
+            </div>
+        </div>
+    </div>
+
+    <!-- MAIN CONTENT (Hidden initially) -->
+    <div id="mainContent" class="hidden main-content p-6 max-w-7xl mx-auto w-full space-y-6 relative">
+
+        <!-- HEADER -->
+        <header class="flex flex-col xl:flex-row justify-between items-center bg-white p-6 rounded-xl shadow-sm gap-4">
+            <div class="flex flex-col gap-1 text-center xl:text-left">
+                <div class="flex items-center justify-center xl:justify-start gap-3">
+                    <h1 class="text-2xl font-bold text-gray-800" data-i18n="appTitle">Аналітика Клієнтів v14.1</h1>
+                    <span
+                        class="bg-indigo-100 text-indigo-800 text-xs font-semibold px-2.5 py-0.5 rounded border border-indigo-200">Refactored</span>
+                </div>
+            </div>
+
+            <div class="flex flex-col gap-2 items-end">
+                <div class="flex gap-2">
+                    <div id="rateBadge"
+                        class="hidden bg-gray-100 border border-gray-300 text-gray-600 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1"
+                        title="Exchange rates source">
+                        <span id="rateIcon">💱</span> <span id="rateText">Курс: ...</span>
+                    </div>
+                    <div id="periodBadge"
+                        class="hidden bg-green-50 border border-green-200 text-green-700 px-3 py-1.5 rounded-lg text-xs font-medium flex items-center gap-1">
+                        <span>📅</span> <span data-i18n="lblPeriod">Період:</span> <span id="detectedPeriod"
+                            class="font-bold">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex flex-col sm:flex-row items-center gap-4">
+                <!-- Language Toggle -->
+                <div class="flex items-center gap-2">
+                    <span class="text-sm font-medium text-gray-600">UA</span>
+                    <label class="relative inline-flex items-center cursor-pointer">
+                        <input type="checkbox" id="langToggle" class="sr-only peer">
+                        <div
+                            class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-indigo-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600">
+                        </div>
+                    </label>
+                    <span class="text-sm font-medium text-gray-600">EN</span>
+                </div>
+
+                <div class="relative">
+                    <input type="file" id="csvInput" accept=".csv" class="hidden" />
+                    <input type="file" id="excelInput" accept=".xlsx, .xls" class="hidden" />
+
+                    <div class="flex gap-2">
+                        <label for="csvInput"
+                            class="cursor-pointer bg-gray-800 hover:bg-gray-900 text-white font-medium py-2 px-4 rounded-lg transition-colors shadow-md text-sm">
+                            CSV
+                        </label>
+                        <label for="excelInput"
+                            class="cursor-pointer bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-4 rounded-lg transition-colors shadow-md text-sm">
+                            Excel
+                        </label>
+                        <button id="btnExport"
+                            class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-4 rounded-lg transition-colors shadow-md text-sm flex items-center gap-1">
+                            <span>📥</span> Export
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </header>
+
+        <!-- GLOBAL FILTERS PANEL -->
+        <div id="settingsPanel" class="hidden card border border-indigo-100 bg-white">
+            <h3 class="text-sm font-bold text-gray-500 uppercase mb-4 pb-2 border-b flex justify-between items-center">
+                <span class="flex items-center gap-2">
+                    <span data-i18n="settingsTitle">Налаштування Аналізу (Глобальний фільтр)</span>
+                </span>
+            </h3>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <!-- Origins -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-bold text-sm text-indigo-700" data-i18n="lblOrigins">📤 Країни відправлення</h4>
+                        <div class="space-x-2 text-xs">
+                            <button id="btnSelectAllOrigin"
+                                class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                data-i18n="btnSelectAll">Всі</button>
+                            <span class="text-gray-300">|</span>
+                            <button id="btnUnselectAllOrigin" class="text-gray-500 hover:text-red-500 hover:underline"
+                                data-i18n="btnUnselectAll">Жодної</button>
+                        </div>
+                    </div>
+                    <!-- Grid Layout for ISO Codes -->
+                    <div id="originFilters"
+                        class="grid grid-cols-4 sm:grid-cols-6 gap-2 bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <!-- Checkboxes generated by JS -->
+                    </div>
+                </div>
+                <!-- Destinations -->
+                <div>
+                    <div class="flex justify-between items-center mb-2">
+                        <h4 class="font-bold text-sm text-indigo-700" data-i18n="lblDestinations">📥 Країни отримання
+                        </h4>
+                        <div class="space-x-2 text-xs">
+                            <button id="btnSelectAllDest"
+                                class="text-blue-600 hover:text-blue-800 hover:underline font-medium"
+                                data-i18n="btnSelectAll">Всі</button>
+                            <span class="text-gray-300">|</span>
+                            <button id="btnUnselectAllDest" class="text-gray-500 hover:text-red-500 hover:underline"
+                                data-i18n="btnUnselectAll">Жодної</button>
+                        </div>
+                    </div>
+                    <!-- Grid Layout for ISO Codes -->
+                    <div id="destFilters"
+                        class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-40 overflow-y-auto filter-scroll bg-gray-50 p-3 rounded-lg border border-gray-200">
+                        <!-- Checkboxes generated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="dashboard" class="hidden space-y-6">
+
+            <!-- KPI / ABC HEADER -->
+            <div class="card bg-gradient-to-r from-gray-50 to-white border border-gray-200">
+                <div class="flex justify-between items-center mb-3">
+                    <h3 class="text-sm font-bold text-gray-500 uppercase" data-i18n="abcTitle">ABC Аналіз (Розподіл
+                        Парето)</h3>
+                    <span class="text-xs text-blue-500 bg-blue-50 px-2 py-1 rounded hidden" id="abcFilterActiveLabel"
+                        data-i18n="abcFilterActive">Фільтр активний</span>
+                </div>
+
+                <div class="grid grid-cols-3 gap-4 text-center">
+                    <div class="abc-card abc-a p-3 rounded-xl border border-yellow-200 bg-yellow-50/50" id="cardAbcA">
+                        <span
+                            class="inline-block px-3 py-1 rounded-full bg-yellow-100 text-yellow-800 font-bold text-xs mb-1 border border-yellow-300"
+                            data-i18n="classA">Клас A (VIP)</span>
+                        <p class="text-xs text-gray-500" data-i18n="percIncome80">80% Доходу</p>
+                        <p class="text-xl font-bold text-gray-800" id="countA">0</p>
+                    </div>
+                    <div class="abc-card abc-b p-3 rounded-xl border border-gray-200 bg-gray-50/50" id="cardAbcB">
+                        <span
+                            class="inline-block px-3 py-1 rounded-full bg-gray-100 text-gray-800 font-bold text-xs mb-1 border border-gray-300"
+                            data-i18n="classB">Клас B</span>
+                        <p class="text-xs text-gray-500" data-i18n="percIncome15">15% Доходу</p>
+                        <p class="text-xl font-bold text-gray-800" id="countB">0</p>
+                    </div>
+                    <div class="abc-card abc-c p-3 rounded-xl border border-orange-200 bg-orange-50/50" id="cardAbcC">
+                        <span
+                            class="inline-block px-3 py-1 rounded-full bg-orange-100 text-orange-800 font-bold text-xs mb-1 border border-orange-300"
+                            data-i18n="classC">Клас C</span>
+                        <p class="text-xs text-gray-500" data-i18n="percIncome5">5% Доходу</p>
+                        <p class="text-xl font-bold text-gray-800" id="countC">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TOTALS -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div class="card border-l-4 border-blue-500">
+                    <h3 class="text-gray-500 text-sm font-medium" data-i18n="totalClients">Всього Клієнтів</h3>
+                    <p class="text-3xl font-bold text-gray-800" id="totalClients">0</p>
+                </div>
+                <div class="card border-l-4 border-green-500">
+                    <h3 class="text-gray-500 text-sm font-medium" data-i18n="totalRevenue">Загальний Дохід</h3>
+                    <p class="text-3xl font-bold text-gray-800" id="totalRevenue">0 €</p>
+                </div>
+                <div class="card border-l-4 border-yellow-500">
+                    <h3 class="text-gray-500 text-sm font-medium" data-i18n="avgCheckGlobal">Середній Чек (Global)</h3>
+                    <p class="text-3xl font-bold text-gray-800" id="avgCheckGlobal">0 €</p>
+                </div>
+            </div>
+
+            <!-- NEW: ORIGIN REVENUE BREAKDOWN -->
+            <div class="card bg-white border border-gray-100 shadow-sm" id="originBreakdownSection">
+                <h3 class="text-sm font-bold text-gray-500 uppercase mb-3" data-i18n="lblOriginBreakdown">Вклад країн
+                    відправників (Дохід)</h3>
+                <div id="originStatsContainer"
+                    class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+                    <!-- Generated JS -->
+                </div>
+            </div>
+
+            <!-- CHARTS ROW 1: COUNTRIES -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card relative">
+                    <div class="flex justify-between items-start mb-4">
+                        <h3 class="text-lg font-bold text-gray-800" data-i18n="topCountriesRev">🌍 Топ Країн-отримувачів
+                            (Дохід)</h3>
+                    </div>
+                    <p class="text-xs text-gray-400 mb-2" data-i18n="clickToFilterCountry">Натисни на країну, щоб
+                        відфільтрувати список клієнтів</p>
+                    <div class="relative h-64">
+                        <canvas id="countryRevenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4" data-i18n="topCountriesAvg">📊 Топ Країн за
+                        СЕРЕДНІМ ЧЕКОМ</h3>
+                    <div class="relative h-64">
+                        <canvas id="countryAvgCheckChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS ROW 2: CLIENTS FINANCIAL -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4" data-i18n="topClientsRev">💰 Топ-10 Клієнтів за
+                        Доходом</h3>
+                    <div class="relative h-64">
+                        <canvas id="revenueChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4" data-i18n="topClientsAvg">💎 Топ-10 Клієнтів за
+                        СЕРЕДНІМ ЧЕКОМ</h3>
+                    <div class="relative h-64">
+                        <canvas id="avgCheckChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- CHARTS ROW 3: CLIENTS COUNT & DESTINATIONS -->
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4" data-i18n="topClientsCount">📦 Топ-10 Клієнтів за
+                        Кількістю</h3>
+                    <p class="text-xs text-gray-400 mb-2" data-i18n="clickToFindClient">Натисни на стовпчик, щоб знайти
+                        клієнта в таблиці</p>
+                    <div class="relative h-64">
+                        <canvas id="countChart"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3 class="text-lg font-bold text-gray-800 mb-4" data-i18n="topDestinations">✈️ Куди відправляють
+                        Топ-10 (за доходом)</h3>
+                    <p class="text-xs text-gray-400 mb-2" data-i18n="clickNameX">Натисни на ім'я клієнта (вісь X), щоб
+                        знайти його</p>
+                    <div class="relative h-64">
+                        <canvas id="destinationChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SEGMENT FILTERS -->
+            <div class="card bg-white border border-gray-200">
+                <h3 class="text-sm font-bold text-gray-500 uppercase mb-3" data-i18n="filterBySegment">Фільтр по
+                    сегментах</h3>
+                <div id="segmentFiltersContainer" class="flex flex-wrap gap-2">
+                    <!-- Buttons generated by JS -->
+                </div>
+            </div>
+
+            <!-- DETAILED TABLE -->
+            <div class="card overflow-hidden" id="detailsSection">
+                <div class="flex flex-col md:flex-row justify-between items-center mb-4 gap-4">
+                    <div class="flex flex-col gap-1">
+                        <h3 class="text-lg font-bold text-gray-800" data-i18n="detailedList">Детальний список клієнтів
+                        </h3>
+                        <div class="flex gap-2 text-xs">
+                            <span id="currentFilterLabel"
+                                class="text-blue-600 font-medium bg-blue-50 px-2 py-1 rounded hidden">Segment:
+                                All</span>
+                            <span id="countryFilterLabel"
+                                class="text-purple-600 font-medium bg-purple-50 px-2 py-1 rounded hidden cursor-pointer hover:bg-purple-100">Country:
+                                All ✖</span>
+                        </div>
+                    </div>
+                    <div class="flex gap-2 w-full md:w-auto">
+                        <input type="text" id="searchTable" placeholder="Пошук клієнта..."
+                            class="border border-gray-300 rounded-lg px-3 py-1 text-sm focus:outline-none focus:border-blue-500 w-full md:w-64">
+                        <button id="btnResetSearch"
+                            class="text-xs text-gray-500 hover:text-red-500 underline whitespace-nowrap"
+                            data-i18n="resetSearch">Скинути пошук</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="min-w-full text-xs text-left text-gray-500">
+                        <thead class="text-xs text-gray-700 uppercase bg-gray-50 sticky top-0">
+                            <tr>
+                                <th class="px-4 py-3 cursor-pointer hover:bg-gray-100" data-sort="name"><span
+                                        data-i18n="thClient">Клієнт</span> ↕</th>
+                                <th class="px-4 py-3 cursor-pointer hover:bg-gray-100 text-center" data-sort="abcClass">
+                                    ABC ↕</th>
+                                <th class="px-4 py-3 cursor-pointer hover:bg-gray-100" data-sort="segment"><span
+                                        data-i18n="thSegment">Сегмент</span> ↕</th>
+                                <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-100" data-sort="revenue">
+                                    <span data-i18n="thRevenue">Дохід (EUR)</span> ↕
+                                </th>
+                                <th class="px-4 py-3 text-center cursor-pointer hover:bg-gray-100" data-sort="count">
+                                    <span data-i18n="thCount">К-сть</span> ↕
+                                </th>
+                                <th class="px-4 py-3 text-right cursor-pointer hover:bg-gray-100 bg-yellow-50"
+                                    data-sort="avgCheck"><span data-i18n="thAvgCheck">Сер. Чек</span> ↕</th>
+                                <th class="px-4 py-3 bg-blue-50"><span data-i18n="thDest">Куди (Топ)</span></th>
+                                <th class="px-4 py-3 bg-green-50"><span data-i18n="thItem">Що (Топ)</span></th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientTableBody">
+                            <!-- Rows generated by JS -->
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- PAGINATION CONTROLS -->
+                <div id="paginationControls"
+                    class="flex justify-between items-center px-4 py-3 border-t border-gray-200 bg-gray-50">
+                    <div class="text-xs text-gray-500">
+                        <span data-i18n="lblTotalRows">Всього рядків:</span> <span id="pagTotal"
+                            class="font-bold">0</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <button id="btnPrev"
+                            class="px-3 py-1 rounded bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 text-xs font-medium"
+                            disabled>
+                            &larr; <span data-i18n="btnPrev">Назад</span>
+                        </button>
+                        <span class="text-xs font-medium text-gray-700">
+                            <span data-i18n="lblPage">Стор.</span> <span id="pagCurrent">1</span> / <span
+                                id="pagMax">1</span>
+                        </span>
+                        <button id="btnNext"
+                            class="px-3 py-1 rounded bg-white border border-gray-300 text-gray-600 hover:bg-gray-100 disabled:opacity-50 text-xs font-medium"
+                            disabled>
+                            <span data-i18n="btnNext">Вперед</span> &rarr;
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- EMPTY STATE -->
+        <div id="emptyState" class="hidden text-center py-20 text-gray-500">
+            <!-- Removed empty state from main flow as we have landing screen -->
+        </div>
+    </div>
+
+    <!-- FOOTER -->
+    <footer class="bg-gray-800 text-white py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center text-sm">
+            <div class="mb-2 md:mb-0">
+                &copy; <span id="currentYear">2024</span> Roman Novobranets. All rights reserved.
+            </div>
+            <div class="text-gray-400">
+                Client Analytics Tool v14.1
+            </div>
+        </div>
+    </footer>
+
+    <!-- MODAL -->
+    <div id="clientModal" class="fixed inset-0 modal-overlay hidden z-50 z-[60] flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-3xl modal-content transform transition-all scale-95 opacity-0"
+            id="modalPanel"> <!-- Animation logic needs JS or removing 'opacity-0' manually if not animated -->
+            <!-- Fixing classes for visibility -->
+            <div class="bg-gray-50 px-6 py-4 border-b flex justify-between items-center rounded-t-xl">
+                <div>
+                    <h2 class="text-xl font-bold text-gray-800" id="modalClientName">Client Name</h2>
+                    <span id="modalClientSegment" class="text-xs text-gray-500">Private Person</span>
+                </div>
+                <button id="btnCloseModal" class="text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-6">
+
+                <div class="flex items-center gap-2 text-sm">
+                    <!-- Content filled by JS -->
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div class="bg-blue-50 p-4 rounded-lg">
+                        <p class="text-xs text-blue-500 uppercase font-bold" data-i18n="modalRevTitle">Дохід</p>
+                        <p class="text-xl font-bold text-blue-700" id="modalClientRevenue">0 €</p>
+                    </div>
+                    <div class="bg-green-50 p-4 rounded-lg">
+                        <p class="text-xs text-green-500 uppercase font-bold" data-i18n="modalCountTitle">Відправок</p>
+                        <p class="text-xl font-bold text-green-700" id="modalClientCount">0</p>
+                    </div>
+                    <div class="bg-yellow-50 p-4 rounded-lg">
+                        <p class="text-xs text-yellow-500 uppercase font-bold" data-i18n="modalAvgTitle">Сер. Чек</p>
+                        <p class="text-xl font-bold text-yellow-700" id="modalClientAvg">0 €</p>
+                    </div>
+                </div>
+
+                <div>
+                    <h4 class="font-bold text-gray-700 mb-2" data-i18n="modalItemsTitle">📦 Що відправляли</h4>
+                    <div class="bg-white border rounded-lg overflow-hidden max-h-40 overflow-y-auto">
+                        <table class="min-w-full text-xs">
+                            <tbody id="modalItemsTable" class="divide-y divide-gray-100"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="bg-gray-50 px-6 py-3 rounded-b-xl flex justify-end">
+                <button id="btnCloseModalBottom"
+                    class="px-4 py-2 bg-gray-800 text-white rounded-lg hover:bg-gray-700 text-sm font-medium"
+                    data-i18n="btnClose">Закрити</button>
+            </div>
+        </div>
+    </div>
+</body>
+
+</html>
