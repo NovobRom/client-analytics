@@ -9,7 +9,7 @@ export class DashboardRenderer {
     render(res) {
         if (!res) return;
         if (this.els.totalRev) this.els.totalRev.textContent = Utils.formatCurrency(res.totalRev);
-        if (this.els.totalShip) this.els.totalShip.textContent = res.totalShipments;
+        if (this.els.totalShip) this.els.totalShip.textContent = res.clients.length;
         if (this.els.avgCheck) this.els.avgCheck.textContent = Utils.formatCurrency(res.avgCheckGlobal);
 
         // Origin Display
@@ -20,14 +20,26 @@ export class DashboardRenderer {
                 .forEach(([origin, rev]) => {
                     const div = document.createElement('div');
                     div.className = "flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-100";
-                    const flagClass = `fi fi-${(COUNTRY_CODE_MAP[origin] || 'xx').toLowerCase()}`;
-                    div.innerHTML = `
-                        <div class="flex items-center space-x-2">
-                            <span class="${flagClass} rounded shadow-sm"></span>
-                            <span class="text-sm font-medium text-gray-700">${origin}</span>
-                        </div>
-                        <span class="text-sm font-bold text-gray-900">${Utils.formatCurrency(rev)}</span>
-                    `;
+
+                    const left = document.createElement('div');
+                    left.className = "flex items-center space-x-2";
+
+                    const flag = document.createElement('span');
+                    flag.className = `fi fi-${(COUNTRY_CODE_MAP[origin] || 'xx').toLowerCase()} rounded shadow-sm`;
+
+                    const name = document.createElement('span');
+                    name.className = "text-sm font-medium text-gray-700";
+                    name.textContent = origin;
+
+                    left.appendChild(flag);
+                    left.appendChild(name);
+
+                    const right = document.createElement('span');
+                    right.className = "text-sm font-bold text-gray-900";
+                    right.textContent = Utils.formatCurrency(rev);
+
+                    div.appendChild(left);
+                    div.appendChild(right);
                     this.els.originContainer.appendChild(div);
                 });
         }

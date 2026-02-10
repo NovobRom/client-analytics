@@ -6,4 +6,8 @@ window.APP = new App();
 
 window.onload = () => {
     window.APP.init();
+
+    // Update Year
+    const yearEl = document.getElementById('currentYear');
+    if (yearEl) yearEl.textContent = new Date().getFullYear();
 };

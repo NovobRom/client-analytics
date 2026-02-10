@@ -3,6 +3,7 @@ import { AnalyticsEngine } from './AnalyticsEngine.js';
 import { StateManager } from './StateManager.js';
 import { UIManager } from './UIManager.js';
 import { ChartManager } from './ChartManager.js';
+import { Utils } from '../utils/helpers.js';
 import * as XLSX from 'xlsx';
 
 export class App {
@@ -16,7 +17,6 @@ export class App {
 
     init() {
         this.setupEventListeners();
-        this.setupModalListeners();
 
         // Subscribe to state changes to update Charts
         this.stateManager.subscribe((state, type) => {
@@ -52,19 +52,14 @@ export class App {
         // Export
         const btnExport = document.getElementById('btnExport');
         if (btnExport) btnExport.addEventListener('click', () => this.exportData());
-    }
 
-    setupModalListeners() {
-        const m = document.getElementById('clientModal');
-        const close = document.getElementById('closeModal');
-        if (close && m) {
-            close.onclick = () => { m.classList.add('hidden'); m.classList.remove('flex'); };
-            m.onclick = (e) => { if (e.target === m) close.click(); };
-        }
-        // Also bottom close button
-        const closeBottom = document.getElementById('btnCloseModalBottom');
-        if (closeBottom && m) {
-            closeBottom.onclick = () => { m.classList.add('hidden'); m.classList.remove('flex'); };
+        // Language Toggle
+        const langToggle = document.getElementById('langToggle');
+        if (langToggle) {
+            langToggle.addEventListener('change', (e) => {
+                const lang = e.target.checked ? 'en' : 'ua';
+                this.uiManager.applyTranslations(lang);
+            });
         }
     }
 
@@ -92,6 +87,21 @@ export class App {
             // 5. Render Charts
             this.chartManager.renderAll(res.clients, res.countryStats, res.originStats);
 
+            // 6. Badges
+            const rateBadge = document.getElementById('rateBadge');
+            if (rateBadge) {
+                rateBadge.classList.remove('hidden');
+                const rateText = document.getElementById('rateText');
+                if (rateText) rateText.textContent = this.analyticsEngine.isRatesLive ? "Курс: Live (ECB)" : "Курс: Fallback";
+            }
+
+            const periodBadge = document.getElementById('periodBadge');
+            if (periodBadge && res.dateRange && res.dateRange.min && res.dateRange.max) {
+                const pText = document.getElementById('detectedPeriod');
+                if (pText) pText.textContent = `${Utils.formatDate(res.dateRange.min)} - ${Utils.formatDate(res.dateRange.max)}`;
+                periodBadge.classList.remove('hidden');
+            }
+
             // 6. Show Main Content
             const landing = document.getElementById('landingScreen');
             if (landing) landing.classList.add('hidden');
@@ -109,56 +119,7 @@ export class App {
     reAnalyze() {
         if (this.dataEngine.rawRows.length === 0) return;
 
-        // Use current state filters
-        // NOTE: we need to pass filters to analyze.
-        // StateManager filters include search/abc which are UI filters, not Analytics filters (except Origin/Country?)
-        // AnalyticsEngine filters are: origins, dests (country).
-        // Segment is handled in Analytics too?
-        // Let's check AnalyticsEngine: `filters.origins` and `filters.dests`.
-        // `filters.segment`? No, AnalyticsEngine doesn't seem to filter by segment in `filterRows` step (Line 926).
-        // Wait, line 926: `const o = ... const d = ...`.
-        // It filters by origin and dest.
-        // What about segment?
-        // AnalyticsEngine calculates `segmentStats` for ALL rows matching origin/dest.
-        // If I select "Segment A", does it filter the input to Analytics?
-        // Original code: `applyCombinedFilters` filtered by Segment!
-        // My `AnalyticsEngine` logic (Step 214):
-        // It DOES NOT filter by segment in Step 1.
-        // But `StateManager.getFilteredClients` DOES.
-        // So the "List" is filtered by Segment.
-        // But Charts (which use `res` from Analytics) show ALL segments?
-        // If I select "Segment A", I expect Charts to show ONLY Segment A data?
-        // If so, `AnalyticsEngine` needs to filter by Segment too.
-        // Let's update `AnalyticsEngine.analyze` to accept `filters.segment`.
-        // And use it in Step 1.
-
-        // I will update App.js to pass segment filter.
-        // And I should update AnalyticsEngine to handle it.
-        // But I already wrote AnalyticsEngine.
-        // I'll check AnalyticsEngine code in Step 223 again.
-        // It does NOT use `filters.segment` in Step 1.
-        // It uses `filters.origins` and `filters.dests`.
-
-        // So I should update AnalyticsEngine to filter by segment.
-        // Or I should accept that Analytics is "Global Scope" and List is "Refined Scope".
-        // But the Dashboard (KPIs, Charts) usually reflects the "View".
-        // If I click "Segment A", KPIs should update.
-        // So yes, AnalyticsEngine must filter by segment.
-
-        // I will rewrite `AnalyticsEngine` with Segment filter support?
-        // Or just let it be for now and see if I can do it in `reAnalyze`.
-        // If `DataEngine.rawRows` contains all, I can filter them BEFORE passing to analyze?
-        // No, `analyze` is the engine.
-        // Ideally I should update `AnalyticsEngine.js`.
-
-        // I will stick to what I have, but add Segment filtering to `AnalyticsEngine` in a subsequent edit if needed.
-        // For now, let's match existing behavior:
-        // Original `applyCombinedFilters` filtered EVERYTHING.
-        // So `AnalyticsEngine` IS the `applyCombinedFilters`.
-        // It needs `segment` in filter.
-
-        // I'll update `AnalyticsEngine` in the next step to include segment filter.
-
+        // Apply filters (including segment, origin, dest)
         const filters = {
             origins: this.stateManager.filters.origins,
             dests: this.stateManager.filters.country,

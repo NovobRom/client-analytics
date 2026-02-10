@@ -8,8 +8,34 @@ export class DataEngine {
         this.colIndices = {};
     }
 
+    validateFile(file) {
+        // Size Check (50MB)
+        const MAX_SIZE = 50 * 1024 * 1024;
+        if (file.size > MAX_SIZE) {
+            throw new Error(`File validation failed: File too large (${(file.size / 1024 / 1024).toFixed(2)}MB). Max 50MB.`);
+        }
+
+        // Empty Check
+        if (file.size === 0) {
+            throw new Error("File validation failed: File is empty.");
+        }
+
+        // Extension Check
+        const ext = file.name.split('.').pop().toLowerCase();
+        const allowedExts = ['csv', 'xls', 'xlsx'];
+        if (!allowedExts.includes(ext)) {
+            throw new Error(`File validation failed: Invalid extension .${ext}. Allowed: .csv, .xls, .xlsx`);
+        }
+    }
+
     processCSV(file) {
         return new Promise((resolve, reject) => {
+            try {
+                this.validateFile(file);
+            } catch (e) {
+                return reject(e);
+            }
+
             Papa.parse(file, {
                 header: false,
                 skipEmptyLines: true,
@@ -26,6 +52,12 @@ export class DataEngine {
 
     processExcel(file) {
         return new Promise((resolve, reject) => {
+            try {
+                this.validateFile(file);
+            } catch (e) {
+                return reject(e);
+            }
+
             const reader = new FileReader();
             reader.onload = (e) => {
                 try {

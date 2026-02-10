@@ -1,4 +1,5 @@
 import { Utils } from '../utils/helpers.js';
+import { TRANSLATIONS } from '../utils/constants.js';
 import { DashboardRenderer } from './ui/DashboardRenderer.js';
 import { TableRenderer } from './ui/TableRenderer.js';
 import { FilterManager } from './ui/FilterManager.js';
@@ -76,5 +77,29 @@ export class UIManager {
     // Proxy method for App.js if it calls showClientModal directly (though it shouldn't really)
     showClientModal(client) {
         this.modalManager.showClientModal(client);
+    }
+
+    applyTranslations(lang) {
+        const text = TRANSLATIONS[lang];
+        if (!text) return;
+
+        document.querySelectorAll('[data-i18n]').forEach(el => {
+            const key = el.getAttribute('data-i18n');
+            if (text[key]) {
+                if (el.tagName === 'INPUT' && el.getAttribute('placeholder')) {
+                    el.setAttribute('placeholder', text[key]);
+                } else {
+                    // Check if element has children that we shouldn't overwrite?
+                    // Ideally data-i18n elements are leaf nodes or we use a span.
+                    // But if it has icon, we might overwrite it.
+                    // For now, assume it's text content.
+                    // Exception: Buttons with icons?
+                    // Example: <button><span>Icon</span> Text</button>
+                    // If data-i18n is on button, we overwrite icon.
+                    // We should put data-i18n on the span with text.
+                    el.textContent = text[key];
+                }
+            }
+        });
     }
 }

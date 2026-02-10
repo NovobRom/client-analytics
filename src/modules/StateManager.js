@@ -15,7 +15,20 @@ export class StateManager {
             search: ""
         };
 
+        this.sort = { field: 'revenue', dir: 'desc' };
+
         this.subscribers = [];
+    }
+
+    setSort(field) {
+        if (this.sort.field === field) {
+            this.sort.dir = this.sort.dir === 'desc' ? 'asc' : 'desc';
+        } else {
+            this.sort.field = field;
+            this.sort.dir = 'desc';
+            if (field === 'name' || field === 'segment' || field === 'abcClass') this.sort.dir = 'asc';
+        }
+        this.notify('filter_change');
     }
 
     subscribe(cb) { this.subscribers.push(cb); }
@@ -58,7 +71,7 @@ export class StateManager {
 
     getFilteredClients() {
         if (!this.globalClientData) return [];
-        return this.globalClientData.filter(c => {
+        const filtered = this.globalClientData.filter(c => {
             // Segment
             if (this.filters.segment !== 'ALL' && c.segment !== this.filters.segment) return false;
 
@@ -72,7 +85,7 @@ export class StateManager {
 
             // Country (Destination)
             if (this.filters.country.length > 0) {
-                const dests = Object.keys(c.destinationsMap);
+                const dests = Object.keys(c.destinationsMap || {});
                 if (!dests.some(d => this.filters.country.includes(d))) return false;
             }
 
@@ -84,5 +97,24 @@ export class StateManager {
 
             return true;
         });
+
+        // Sort
+        const { field, dir } = this.sort;
+        const mult = dir === 'asc' ? 1 : -1;
+
+        filtered.sort((a, b) => {
+            let valA = a[field];
+            let valB = b[field];
+
+            if (typeof valA === 'string') {
+                valA = valA.toLowerCase();
+                valB = (valB || '').toLowerCase();
+            }
+            if (valA < valB) return -1 * mult;
+            if (valA > valB) return 1 * mult;
+            return 0;
+        });
+
+        return filtered;
     }
 }
